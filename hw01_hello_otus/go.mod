@@ -1,4 +1,4 @@
-module github.com/sengun/otus-hw
+module github.com/sengun/otus-hw/hw01_hello_otus
 
 go 1.20
 
