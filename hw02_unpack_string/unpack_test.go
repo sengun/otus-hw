@@ -34,12 +34,83 @@ func TestUnpack(t *testing.T) {
 }
 
 func TestUnpackInvalidString(t *testing.T) {
-	invalidStrings := []string{"3abc", "45", "aaa10b"}
+	invalidStrings := []string{"3abc", "45", "aaa10b", `a3\a3`}
 	for _, tc := range invalidStrings {
 		tc := tc
 		t.Run(tc, func(t *testing.T) {
 			_, err := Unpack(tc)
 			require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
+		})
+	}
+}
+
+func TestIsSymbolEscapedWithCount(t *testing.T) {
+	dataSet := []struct {
+		rune1          rune
+		rune2          rune
+		rune3          rune
+		expectedResult bool
+	}{
+		{rune1: '\\', rune2: '\\', rune3: '3', expectedResult: true},
+		{rune1: '\\', rune2: '3', rune3: '4', expectedResult: true},
+		{rune1: '\\', rune2: 'a', rune3: '1', expectedResult: false},
+		{rune1: '\\', rune2: '3', rune3: '\\', expectedResult: false},
+		{rune1: '3', rune2: 'a', rune3: '1', expectedResult: false},
+	}
+
+	for _, ds := range dataSet {
+		ds := ds
+		t.Run(string(ds.rune1)+string(ds.rune2)+string(ds.rune3), func(t *testing.T) {
+			result := isSymbolEscapedWithCount(ds.rune1, ds.rune2, ds.rune3)
+			require.Equal(t, ds.expectedResult, result)
+		})
+	}
+}
+
+func TestIsSymbolNotEscapedWithCount(t *testing.T) {
+	dataSet := []struct {
+		rune1          rune
+		rune2          rune
+		expectedResult bool
+	}{
+		{rune1: 'a', rune2: '3', expectedResult: true},
+		{rune1: 'a', rune2: '\\', expectedResult: false},
+		{rune1: '\\', rune2: 'a', expectedResult: false},
+		{rune1: '\\', rune2: '3', expectedResult: false},
+		{rune1: '3', rune2: 'a', expectedResult: false},
+	}
+
+	for _, ds := range dataSet {
+		ds := ds
+		t.Run(string(ds.rune1)+string(ds.rune2), func(t *testing.T) {
+			result := isSymbolNotEscapedWithCount(ds.rune1, ds.rune2)
+			require.Equal(t, ds.expectedResult, result)
+		})
+	}
+}
+
+func TestIsEscapeRune(t *testing.T) {
+	require.Equal(t, true, isEscapeRune('\\'))
+	require.Equal(t, false, isEscapeRune('3'))
+	require.Equal(t, false, isEscapeRune('a'))
+}
+
+func TestIsEscapeRuneOrDigit(t *testing.T) {
+	dataSet := []struct {
+		symbol         rune
+		expectedResult bool
+	}{
+		{symbol: 'a', expectedResult: false},
+		{symbol: 'z', expectedResult: false},
+		{symbol: '\\', expectedResult: true},
+		{symbol: '3', expectedResult: true},
+	}
+
+	for _, ds := range dataSet {
+		ds := ds
+		t.Run(string(ds.symbol), func(t *testing.T) {
+			result := isEscapeRuneOrDigit(ds.symbol)
+			require.Equal(t, ds.expectedResult, result)
 		})
 	}
 }
