@@ -6,10 +6,12 @@ import (
 	"strings"
 )
 
-var dashExpression = regexp.MustCompile(`(\s-)|(-\s)`)
-var wordAppendixExpression = regexp.MustCompile(`[\n\t,.:;"']+`)
+var (
+	dashExpression         = regexp.MustCompile(`(\s-)|(-\s)`)
+	wordAppendixExpression = regexp.MustCompile(`[\n\t,.:;"']+`)
+)
 
-type wordCountStruct struct {
+type WordCountStruct struct {
 	word  string
 	count int
 }
@@ -23,12 +25,12 @@ func Top10(text string) []string {
 			continue
 		}
 		lowerCaseWord := strings.ToLower(word)
-		counter[lowerCaseWord] = counter[lowerCaseWord] + 1
+		counter[lowerCaseWord]++
 	}
-	wordCounter := make([]wordCountStruct, 0, len(counter))
+	wordCounter := make([]WordCountStruct, 0, len(counter))
 
 	for word, wordCount := range counter {
-		wordCounter = append(wordCounter, wordCountStruct{word, wordCount})
+		wordCounter = append(wordCounter, WordCountStruct{word, wordCount})
 	}
 
 	return GetFirstTenWords(SortWordCountStruct(wordCounter))
@@ -49,7 +51,7 @@ func GetTextUnits(text string) []string {
 	return strings.Split(text, " ")
 }
 
-func GetFirstTenWords(wordCounter []wordCountStruct) []string {
+func GetFirstTenWords(wordCounter []WordCountStruct) []string {
 	j := 0
 	resultWords := make([]string, 0, len(wordCounter))
 	for _, wordCount := range wordCounter {
@@ -63,7 +65,7 @@ func GetFirstTenWords(wordCounter []wordCountStruct) []string {
 	return resultWords
 }
 
-func SortWordCountStruct(wordCounter []wordCountStruct) []wordCountStruct {
+func SortWordCountStruct(wordCounter []WordCountStruct) []WordCountStruct {
 	sort.Slice(wordCounter, func(i, j int) bool {
 		if wordCounter[i].count == wordCounter[j].count {
 			return wordCounter[i].word < wordCounter[j].word
