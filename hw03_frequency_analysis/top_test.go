@@ -1,13 +1,14 @@
 package hw03frequencyanalysis
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 // Change to true if needed.
-var taskWithAsteriskIsCompleted = false
+var taskWithAsteriskIsCompleted = true
 
 var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
@@ -78,5 +79,99 @@ func TestTop10(t *testing.T) {
 			}
 			require.Equal(t, expected, Top10(text))
 		}
+	})
+}
+
+func TestPrepareText(t *testing.T) {
+	dataSet := []struct {
+		inputString    string
+		expectedString string
+	}{
+		{inputString: "Привет, Отус- !", expectedString: "Привет  Отус !"},
+		{inputString: "Пу-ух! Пу-ух!- а он  не  откликается,", expectedString: "Пу-ух! Пу-ух! а он  не  откликается "},
+		{
+			inputString:    "Дефис-дефис -тире в начале или тире в конце- или - посередине",
+			expectedString: "Дефис-дефис тире в начале или тире в конце или  посередине",
+		},
+		{inputString: "Запятая, точка.двоеточие: ", expectedString: "Запятая  точка двоеточие  "},
+	}
+
+	for i, ds := range dataSet {
+		t.Run(fmt.Sprintf("Prepare Text with regular expressions. Dataset %d", i), func(t *testing.T) {
+			require.Equal(t, ds.expectedString, PrepareText(ds.inputString))
+		})
+	}
+}
+
+func TestGetTextUnits(t *testing.T) {
+	dataSet := []struct {
+		inputString   string
+		expectedSlice []string
+	}{
+		{inputString: "Привет, Отус- !", expectedSlice: []string{"Привет,", "Отус-", "!"}},
+		{inputString: "", expectedSlice: []string{}},
+	}
+
+	for i, ds := range dataSet {
+		t.Run(fmt.Sprintf("Split text. Dataset %d", i), func(t *testing.T) {
+			require.Equal(t, ds.expectedSlice, GetTextUnits(ds.inputString))
+		})
+	}
+}
+
+func TestGetFirstTenWords(t *testing.T) {
+	dataSet := []struct {
+		inputStruct   []WordCountStruct
+		expectedSlice []string
+	}{
+		{
+			inputStruct:   []WordCountStruct{{"Привет,", 1}, {"Отус-", 1}, {"!", 1}},
+			expectedSlice: []string{"Привет,", "Отус-", "!"},
+		}, {
+			inputStruct: []WordCountStruct{
+				{"1", 1},
+				{"2", 1},
+				{"3", 1},
+				{"4", 1},
+				{"5", 1},
+				{"6", 1},
+				{"7", 1},
+				{"8", 1},
+				{"9", 1},
+				{"10", 1},
+				{"11", 1},
+			},
+			expectedSlice: []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"},
+		}, {
+			inputStruct: []WordCountStruct{
+				{"1", 1},
+				{"2", 1},
+				{"3", 1},
+				{"4", 1},
+				{"5", 1},
+				{"6", 1},
+				{"7", 1},
+				{"8", 1},
+				{"9", 1},
+				{"10", 1},
+			},
+			expectedSlice: []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"},
+		},
+	}
+
+	for i, ds := range dataSet {
+		t.Run(fmt.Sprintf("Get First Ten Words. Dataset %d", i), func(t *testing.T) {
+			require.Equal(t, ds.expectedSlice, GetFirstTenWords(ds.inputStruct))
+		})
+	}
+}
+
+func TestSortWordCountStruct(t *testing.T) {
+	t.Run("Sort WordCount Struct", func(t *testing.T) {
+		require.Equal(
+			t,
+			[]WordCountStruct{{"В", 3}, {"А", 1}, {"Б", 1}},
+			SortWordCountStruct([]WordCountStruct{{"А", 1}, {"Б", 1}, {"В", 3}}),
+		)
 	})
 }
