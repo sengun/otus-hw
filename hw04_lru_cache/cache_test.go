@@ -50,13 +50,44 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+		capacity := 3
+		c := NewCache(capacity)
+		var val interface{}
+		var ok bool
+		for i := 0; i < capacity; i++ {
+			c.Set(Key("key_"+strconv.Itoa(i)), i)
+
+			val, ok = c.Get(Key("key_" + strconv.Itoa(i)))
+			require.True(t, ok)
+			require.Equal(t, i, val)
+		}
+
+		c.Set(Key("key_"+strconv.Itoa(capacity)), capacity)
+
+		val, ok = c.Get(Key("key_0"))
+		require.False(t, ok)
+		require.Nil(t, val)
+
+		val, ok = c.Get(Key("key_" + strconv.Itoa(capacity)))
+		require.True(t, ok)
+		require.Equal(t, capacity, val)
+
+		for i := 1; i < capacity; i++ {
+			c.Get(Key("key_" + strconv.Itoa(i)))
+		}
+		c.Set(Key("key_0"), 0)
+
+		val, ok = c.Get(Key("key_0"))
+		require.True(t, ok)
+		require.Equal(t, 0, val)
+
+		val, ok = c.Get(Key("key_" + strconv.Itoa(capacity)))
+		require.False(t, ok)
+		require.Nil(t, val)
 	})
 }
 
 func TestCacheMultithreading(t *testing.T) {
-	t.Skip() // Remove me if task with asterisk completed.
-
 	c := NewCache(10)
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
@@ -76,4 +107,19 @@ func TestCacheMultithreading(t *testing.T) {
 	}()
 
 	wg.Wait()
+}
+
+func TestDisplaceLastItem(t *testing.T) {
+	c := NewCache(2)
+	c.Set(Key("ket_0"), 100)
+	c.Set(Key("ket_1"), 200)
+	c.(*lruCache).displaceLastItem()
+
+	val, ok := c.Get(Key("ket_0"))
+	require.False(t, ok)
+	require.Nil(t, val)
+
+	val, ok = c.Get(Key("ket_1"))
+	require.True(t, ok)
+	require.Equal(t, 200, val)
 }
