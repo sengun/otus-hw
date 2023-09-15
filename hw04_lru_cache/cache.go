@@ -28,11 +28,13 @@ func (cache *lruCache) Set(key Key, value interface{}) bool {
 
 		return true
 	}
+
+	if cache.queue.Len()+1 > cache.capacity {
+		cache.displaceLastItem()
+	}
+
 	listItem := cache.queue.PushFront(&cacheItem{key: key, value: value})
 	cache.items[key] = listItem
-	if cache.queue.Len() > cache.capacity {
-		cache.DisplaceLastItem()
-	}
 
 	return false
 }
@@ -55,10 +57,10 @@ func (cache *lruCache) Clear() {
 	defer cache.mutex.Unlock()
 
 	cache.queue = NewList()
-	cache.items = map[Key]*ListItem{}
+	cache.items = make(map[Key]*ListItem, cache.capacity)
 }
 
-func (cache *lruCache) DisplaceLastItem() {
+func (cache *lruCache) displaceLastItem() {
 	lastListItem := cache.queue.Back()
 	if lastListItem == nil {
 		return

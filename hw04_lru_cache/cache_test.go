@@ -113,7 +113,7 @@ func TestDisplaceLastItem(t *testing.T) {
 	c := NewCache(2)
 	c.Set(Key("ket_0"), 100)
 	c.Set(Key("ket_1"), 200)
-	c.(*lruCache).DisplaceLastItem()
+	c.(*lruCache).displaceLastItem()
 
 	val, ok := c.Get(Key("ket_0"))
 	require.False(t, ok)
