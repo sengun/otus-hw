@@ -96,7 +96,7 @@ func TestRunTaskExecutors(t *testing.T) {
 	runTaskExecutors(3, &wg, &taskChannel, &errorCounter)
 
 	require.Eventually(t, func() bool {
-		return errorCounter == int64(1) && len(taskChannel) == 0
+		return atomic.LoadInt64(&errorCounter) == int64(1) && len(taskChannel) == 0
 	}, time.Second*3, time.Second)
 }
 
