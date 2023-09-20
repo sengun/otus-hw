@@ -17,8 +17,8 @@ func Run(tasks []Task, n, m int) error {
 	wg := sync.WaitGroup{}
 	wg.Add(n)
 
-	runTaskExecutors(n, &wg, &taskChannel, &errorCounter)
-	pullTasks(tasks, &taskChannel, int64(m), &errorCounter)
+	runTaskExecutors(n, &wg, taskChannel, &errorCounter)
+	pullTasks(tasks, taskChannel, int64(m), &errorCounter)
 
 	close(taskChannel)
 
@@ -31,12 +31,12 @@ func Run(tasks []Task, n, m int) error {
 	return nil
 }
 
-func runTaskExecutors(n int, wg *sync.WaitGroup, taskChannel *chan Task, errorCounter *int64) {
+func runTaskExecutors(n int, wg *sync.WaitGroup, taskChannel chan Task, errorCounter *int64) {
 	for i := 0; i < n; i++ {
 		go (func() {
 			defer wg.Done()
 
-			for task := range *taskChannel {
+			for task := range taskChannel {
 				if err := task(); err != nil {
 					atomic.AddInt64(errorCounter, 1)
 				}
@@ -45,12 +45,12 @@ func runTaskExecutors(n int, wg *sync.WaitGroup, taskChannel *chan Task, errorCo
 	}
 }
 
-func pullTasks(tasks []Task, taskChannel *chan Task, m int64, errorCounter *int64) {
+func pullTasks(tasks []Task, taskChannel chan Task, m int64, errorCounter *int64) {
 	for _, task := range tasks {
 		if m > 0 && atomic.LoadInt64(errorCounter) >= m {
-			break
+			return
 		}
 
-		*taskChannel <- task
+		taskChannel <- task
 	}
 }

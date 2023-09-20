@@ -93,7 +93,7 @@ func TestRunTaskExecutors(t *testing.T) {
 	wg.Add(3)
 	var errorCounter int64
 
-	runTaskExecutors(3, &wg, &taskChannel, &errorCounter)
+	runTaskExecutors(3, &wg, taskChannel, &errorCounter)
 
 	require.Eventually(t, func() bool {
 		return atomic.LoadInt64(&errorCounter) == int64(1) && len(taskChannel) == 0
@@ -126,7 +126,7 @@ func TestPullTasks(t *testing.T) {
 
 	for _, ds := range dataSet {
 		ds := ds
-		pullTasks(tasks, &ds.taskChannel, ds.m, &ds.errorCounter)
+		pullTasks(tasks, ds.taskChannel, ds.m, &ds.errorCounter)
 
 		require.Eventually(t, func() bool {
 			return len(ds.taskChannel) == ds.expectedTaskChannelLength
