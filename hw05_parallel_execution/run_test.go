@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -67,4 +68,68 @@ func TestRun(t *testing.T) {
 		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks were completed")
 		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
 	})
+}
+
+func TestRunTaskExecutors(t *testing.T) {
+	defer goleak.VerifyNone(t)
+	taskChannel := make(chan Task, 3)
+	tasks := []Task{
+		func() error {
+			return nil
+		},
+		func() error {
+			return nil
+		},
+		func() error {
+			return errors.New("some error")
+		},
+	}
+	taskChannel <- tasks[0]
+	taskChannel <- tasks[1]
+	taskChannel <- tasks[2]
+	close(taskChannel)
+
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+	var errorCounter int64
+
+	runTaskExecutors(3, &wg, taskChannel, &errorCounter)
+
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt64(&errorCounter) == int64(1) && len(taskChannel) == 0
+	}, time.Second*3, time.Second)
+}
+
+func TestPullTasks(t *testing.T) {
+	defer goleak.VerifyNone(t)
+	tasks := []Task{
+		func() error {
+			return nil
+		},
+		func() error {
+			return nil
+		},
+		func() error {
+			return errors.New("some error")
+		},
+	}
+	dataSet := []struct {
+		taskChannel               chan Task
+		m                         int64
+		errorCounter              int64
+		expectedTaskChannelLength int
+	}{
+		{make(chan Task, 3), int64(1), int64(1), 0},
+		{make(chan Task, 3), int64(2), int64(1), 3},
+		{make(chan Task, 3), int64(0), int64(1), 3},
+	}
+
+	for _, ds := range dataSet {
+		ds := ds
+		pullTasks(tasks, ds.taskChannel, ds.m, &ds.errorCounter)
+
+		require.Eventually(t, func() bool {
+			return len(ds.taskChannel) == ds.expectedTaskChannelLength
+		}, time.Second*3, time.Second)
+	}
 }
