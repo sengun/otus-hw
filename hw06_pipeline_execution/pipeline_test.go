@@ -90,4 +90,39 @@ func TestPipeline(t *testing.T) {
 		require.Len(t, result, 0)
 		require.Less(t, int64(elapsed), int64(abortDur)+int64(fault))
 	})
+
+	t.Run("empty stages case", func(t *testing.T) {
+		in := make(Bi)
+		data := []int{110, 2220, 343, 411, 1}
+
+		go func() {
+			defer close(in)
+
+			for _, v := range data {
+				in <- v
+			}
+		}()
+
+		result := make([]int, 0, len(data))
+		for s := range ExecutePipeline(in, nil, []Stage{}...) {
+			result = append(result, s.(int))
+		}
+
+		require.Equal(t, data, result)
+	})
+
+	t.Run("no input channel case", func(t *testing.T) {
+		stage := func(in In) Out {
+			out := make(Bi)
+			go func() {
+				defer close(out)
+				for v := range in {
+					out <- v
+				}
+			}()
+
+			return out
+		}
+		require.Panics(t, func() { ExecutePipeline(nil, nil, []Stage{stage}...) })
+	})
 }
