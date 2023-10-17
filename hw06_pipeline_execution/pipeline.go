@@ -34,6 +34,8 @@ func RunStage(in In, terminate In, stage Stage) Out {
 	go func() {
 		defer func() {
 			close(out)
+			for range stageOutputChannel {
+			}
 		}()
 
 		for {
