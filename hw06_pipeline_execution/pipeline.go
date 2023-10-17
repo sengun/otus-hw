@@ -8,7 +8,55 @@ type (
 
 type Stage func(in In) (out Out)
 
-func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	// Place your code here.
-	return nil
+func ExecutePipeline(in In, terminate In, stages ...Stage) Out {
+	if in == nil {
+		panic("No input channel specified")
+	}
+
+	var out Out
+	out = RunStage(in, terminate, func(in In) Out { return in })
+
+	for _, stage := range stages {
+		if stage == nil {
+			continue
+		}
+
+		out = RunStage(out, terminate, stage)
+	}
+
+	return out
+}
+
+func RunStage(in In, terminate In, stage Stage) Out {
+	stageOutputChannel := stage(in)
+	out := make(Bi)
+
+	go func() {
+		defer func() {
+			close(out)
+			for range stageOutputChannel {
+			}
+		}()
+
+		for {
+			select {
+			case <-terminate:
+				return
+			default:
+			}
+
+			select {
+			case <-terminate:
+				return
+			case v, ok := <-stageOutputChannel:
+				if !ok {
+					return
+				}
+
+				out <- v
+			}
+		}
+	}()
+
+	return out
 }
