@@ -105,7 +105,7 @@ func (w *WriterWithProgressBar) printProgress() {
 	filled := strings.Repeat("#", int(progressBarLength*percent))
 	empty := strings.Repeat(" ", progressBarLength-len(filled))
 
-	fmt.Fprintf(w.output, "\r[%s%s] %d/%d", filled, empty, w.byteWritten, w.byteAmount)
+	fmt.Fprintf(w.output, "\r[%s%s] %3.1f%%", filled, empty, percent*100)
 }
 
 func (w *WriterWithProgressBar) finish() {
